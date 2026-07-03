@@ -11,4 +11,7 @@ const initialBoard = [
   ["BR", "BP", emptyCell, emptyCell, emptyCell, emptyCell, "WP", "WR"],
 ];
 
-export {initialBoard, emptyCell}
+
+const rowLabels = ['a','b','c','d','e','f','g','h'];
+
+export {initialBoard, emptyCell, rowLabels}

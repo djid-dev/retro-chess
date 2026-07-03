@@ -1,20 +1,100 @@
+:root {
+  --square-size: 110px;
+  --board-gap: 0px;
+  --index-gap: 10px;
+  --index-size: 40px;
+  --index-bg: #fae2a0;
+}
+
+/* Contenedor general */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  margin: 80px 50px 20px;
+}
+
+/* Índices superiores: A B C D E F G H */
+.column-index {
+  display: grid;
+  grid-template-columns: repeat(8, var(--square-size));
+  gap: var(--board-gap);
+  justify-content: space-between;
+
+  list-style: none;
+  padding: 10px 0;
+  margin: 10px 0 10px calc(var(--index-size) + var(--index-gap));
+
+  background-color: var(--index-bg);
+  color: #333;
+  border-radius: 6px;
+
+  font-size: 30px;
+  text-shadow: none;
+}
+
+.column-index li {
+  width: var(--square-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Contenedor de índices laterales + tablero */
+.board-container {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--index-gap);
+}
+
+/* Índices laterales: 1 2 3 4 5 6 7 8 */
+.row-index {
+  display: grid;
+  grid-template-rows: repeat(8, var(--square-size));
+  
+  
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  align-content: space-between;
+  
+  background-color: var(--index-bg);
+  color: #333;
+  border-radius: 6px;
+
+  font-size: 30px;
+  text-shadow: none;
+  box-sizing: border-box;
+  padding-bottom: 10px;
+}
+
+.row-index li {
+  width: var(--index-size);
+  height: var(--square-size);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tablero */
 .game-board {
   display: flex;
   width: fit-content;
   height: fit-content;
-  max-width: 1024px;
-  max-height: 1024px;
-  justify-content: center;
-  align-items: center;
+
   list-style: none;
-  padding: 0px;
-  margin: 150px 100px;
+  padding: 0;
+  margin: 0;
+
   box-sizing: border-box;
   border: 3px solid #fae2a0;
   box-shadow: 0px 0px 30px 1px #fae2a0;
   border-radius: 4px;
 }
 
+/* Columnas internas del tablero */
 .column {
   display: flex;
   flex-direction: column;
@@ -22,5 +102,3 @@
   padding: 0;
   margin: 0;
 }
-
-

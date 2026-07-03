@@ -1,10 +1,7 @@
-import {
-  isInsideBoard,
-  isEnemyPiece
-} from "./chessHelpers";
+import { isInsideBoard, isEnemyPiece } from "./chessHelpers";
 import type { ValidPosition } from "./chessTypes";
 
-import { emptyCell } from "./chessConstats";
+import { emptyCell } from "./chessConstants";
 
 // Reglas de movimiento
 export function showAvailableMoves(

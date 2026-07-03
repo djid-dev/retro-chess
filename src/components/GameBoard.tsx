@@ -2,15 +2,11 @@ import { useState } from "react";
 import "../styles/GameBoardStyles.css";
 import Cell from "./Cell";
 
-import {initialBoard, emptyCell} from "../utils/chessConstats"
+import { initialBoard, emptyCell, rowLabels } from "../utils/chessConstants";
 import type { Position, ValidPosition } from "../utils/chessTypes";
 
 import { showAvailableMoves } from "../utils/chessMoves";
 import { isSameColorPiece, isMoveAvailable } from "../utils/chessHelpers";
-
-
-
-
 
 function GameBoard() {
   const [board, setBoard] = useState<string[][]>(initialBoard);
@@ -28,8 +24,6 @@ function GameBoard() {
     column: null,
     row: null,
   });
-
-
 
   const clearSelection = () => {
     setActiveCell({ column: null, row: null });
@@ -81,7 +75,7 @@ function GameBoard() {
     }
 
     // Si el movimiento no está permitido, no hago nada
-    if (!isMoveAvailable(availableMoves,column, row)) {
+    if (!isMoveAvailable(availableMoves, column, row)) {
       return;
     }
 
@@ -100,8 +94,17 @@ function GameBoard() {
   };
 
   return (
-    <div className="game-board">
-      {board.map((column, columnIndex) => (
+   <div className="game-container">
+   
+     <div className="board-container">
+       <ul className="row-index">
+            {board.map((column, columnIndex) => (
+              <li  key={`column-${columnIndex}`}>{-1 * (columnIndex-8)}</li>
+            ))}
+        </ul>
+        
+      <div className="game-board">
+        {board.map((column, columnIndex) => (
         <ul className="column" key={`column-${columnIndex}`}>
           {column.map((cell, rowIndex) => {
             const isActive =
@@ -125,7 +128,17 @@ function GameBoard() {
           })}
         </ul>
       ))}
+      </div>
     </div>
+    
+    <ul className="column-index">
+        {
+        
+        rowLabels.map((row, rowIndex) => (
+          <li key={`column-${rowIndex}`}>{row}</li>
+        ))}
+    </ul>
+   </div>
   );
 }
 

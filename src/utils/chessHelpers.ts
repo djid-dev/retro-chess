@@ -1,4 +1,4 @@
-import { emptyCell } from "./chessConstats";
+import { emptyCell } from "./chessConstants";
 
 const isInsideBoard = (column: number, row: number) => {
   return column >= 0 && column <= 7 && row >= 0 && row <= 7;
