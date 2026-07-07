@@ -2,17 +2,27 @@ import { useState } from "react";
 import "../styles/GameBoardStyles.css";
 import Cell from "./Cell";
 
-import { initialBoard, emptyCell, rowLabels } from "../utils/chessConstants";
+import { emptyCell, rowLabels } from "../utils/chessConstants";
 import type { Position, ValidPosition } from "../utils/chessTypes";
 
-import { showAvailableMoves } from "../utils/chessMoves";
+import { getLegalMoves } from "../utils/chessMoves";
 import { isSameColorPiece, isMoveAvailable } from "../utils/chessHelpers";
 
-function GameBoard() {
-  const [board, setBoard] = useState<string[][]>(initialBoard);
-  const [colorTurn, setTurn] = useState<"W" | "B">("W");
-  const [round, setRound] = useState<number>(0);
+import useChessStore from "../utils/globalStates";
+import { getGameStatus } from "../utils/chessGameStatus";
 
+function GameBoard() {
+  const chessStore = useChessStore();
+  const board = chessStore((state) => state.board);
+  const colorTurn = chessStore((state) => state.colorTurn);
+  const setBoard = chessStore((state) => state.setBoard);
+
+  const setTurn = chessStore((state) => state.setTurn);
+  const incrementRound = chessStore((state) => state.incrementRound);
+  const setGameState = chessStore((state) => state.setGameState);
+  const setWinner = chessStore((state) => state.setWinner);
+
+  // Estados para el manejo de la selección de celdas
   const [activeCell, setActiveCell] = useState<Position>({
     column: null,
     row: null,
@@ -30,13 +40,15 @@ function GameBoard() {
     setMoveFrom({ column: null, row: null });
     setAvailableMoves([]);
   };
+  // -----------------------------------------
 
+  // Cambia el turno de los jugadores
   const changeTurn = () => {
     if (colorTurn === "W") {
       setTurn("B");
     } else {
       setTurn("W");
-      setRound((prevRound) => prevRound + 1);
+      incrementRound();
     }
   };
 
@@ -48,13 +60,12 @@ function GameBoard() {
       clearSelection();
       return;
     }
+    const pieceType = selectedCell[1];
+
+    const moves = getLegalMoves(pieceType, { column, row }, board);
 
     // Si hago click en una pieza de mi color, la selecciono
     if (selectedCell !== emptyCell && selectedCell.startsWith(colorTurn)) {
-      const pieceType = selectedCell[1];
-
-      const moves = showAvailableMoves(pieceType, { column, row }, board);
-
       setMoveFrom({ column, row });
       setActiveCell({ column, row });
       setAvailableMoves(moves);
@@ -80,65 +91,75 @@ function GameBoard() {
     }
 
     // Mover o capturar pieza
-    setBoard((prevBoard) => {
-      const newBoard = prevBoard.map((boardRow) => [...boardRow]);
 
-      newBoard[column][row] = prevBoard[moveFrom.column!][moveFrom.row!];
-      newBoard[moveFrom.column!][moveFrom.row!] = emptyCell;
+    const enemyColor = colorTurn === "W" ? "B" : "W";
 
-      return newBoard;
-    });
+    const newBoard = board.map((boardColumn) => [...boardColumn]);
+    newBoard[column][row] = board[moveFrom.column!][moveFrom.row!];
+    newBoard[moveFrom.column!][moveFrom.row!] = emptyCell;
+
+    setBoard(newBoard);
+
+    const status = getGameStatus(newBoard, enemyColor);
+
+    // Detecta si alguien hizo un Jaque Mate o tablas por Rey ahogado.
+    if (status === "checkmate") {
+      setWinner(colorTurn);
+    } else if (status === "stalemate") {
+      setWinner(null);
+    }
+
+    setGameState(status);
 
     changeTurn();
     clearSelection();
   };
 
   return (
-   <div className="game-container">
-   
-     <div className="board-container">
-       <ul className="row-index">
-            {board.map((column, columnIndex) => (
-              <li  key={`column-${columnIndex}`}>{-1 * (columnIndex-8)}</li>
-            ))}
+    <div className="game-container">
+      <div className="board-container">
+        <ul className="row-index">
+          {board.map((_, columnIndex) => (
+            <li key={`column-${columnIndex}`}>{-1 * (columnIndex - 8)}</li>
+          ))}
         </ul>
-        
-      <div className="game-board">
-        {board.map((column, columnIndex) => (
-        <ul className="column" key={`column-${columnIndex}`}>
-          {column.map((cell, rowIndex) => {
-            const isActive =
-              activeCell.column === columnIndex && activeCell.row === rowIndex;
 
-            const isAvailableMove = availableMoves.some(
-              (move) => move.column === columnIndex && move.row === rowIndex,
-            );
+        <div className="game-board">
+          {board.map((column, columnIndex) => (
+            <ul className="column" key={`column-${columnIndex}`}>
+              {column.map((cell, rowIndex) => {
+                const isActive =
+                  activeCell.column === columnIndex &&
+                  activeCell.row === rowIndex;
 
-            return (
-              <Cell
-                key={`cell-${columnIndex}-${rowIndex}`}
-                cell={cell}
-                cellIndex={rowIndex}
-                rowIndex={columnIndex}
-                isActive={isActive}
-                isAvailableMove={isAvailableMove}
-                setActiveCell={handleCellClick}
-              />
-            );
-          })}
-        </ul>
-      ))}
+                const isAvailableMove = availableMoves.some(
+                  (move) =>
+                    move.column === columnIndex && move.row === rowIndex,
+                );
+
+                return (
+                  <Cell
+                    key={`cell-${columnIndex}-${rowIndex}`}
+                    cell={cell}
+                    cellIndex={rowIndex}
+                    rowIndex={columnIndex}
+                    isActive={isActive}
+                    isAvailableMove={isAvailableMove}
+                    setActiveCell={handleCellClick}
+                  />
+                );
+              })}
+            </ul>
+          ))}
+        </div>
       </div>
-    </div>
-    
-    <ul className="column-index">
-        {
-        
-        rowLabels.map((row, rowIndex) => (
+
+      <ul className="column-index">
+        {rowLabels.map((row, rowIndex) => (
           <li key={`column-${rowIndex}`}>{row}</li>
         ))}
-    </ul>
-   </div>
+      </ul>
+    </div>
   );
 }
 

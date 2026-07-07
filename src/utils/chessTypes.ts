@@ -8,6 +8,14 @@ type ValidPosition = {
   row: number;
 };
 
+export type ColorTurn = "W" | "B";
+
 export type {
   Position, ValidPosition
 }
+
+export type GameStatus =
+  | "playing"
+  | "check"
+  | "checkmate"
+  | "stalemate";

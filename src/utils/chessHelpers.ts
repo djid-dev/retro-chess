@@ -11,6 +11,7 @@ const getPieceColor = (piece: string) => {
 
 const isEnemyPiece = (piece: string, target: string) => {
   if (piece === emptyCell || target === emptyCell) return false;
+  if (target == getPieceColor(target).concat("K")) return false;
   return getPieceColor(piece) !== getPieceColor(target);
 };
 
