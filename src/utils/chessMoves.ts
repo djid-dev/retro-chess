@@ -1,11 +1,13 @@
 import { isInsideBoard, isEnemyPiece } from "./chessHelpers";
-import type { ValidPosition } from "./chessTypes";
+import type { CastlingRights, ValidPosition } from "./chessTypes";
 
 import { emptyCell } from "./chessConstants";
 
+import { getCastlingMoves } from "./chessCastling";
+
 
 // Reglas de movimiento
-export function showAvailableMoves(
+export function ShowAvailableMoves(
   piece: string,
   moveFrom: ValidPosition,
   board: string[][],
@@ -20,6 +22,7 @@ export function showAvailableMoves(
 
     if (!isInsideBoard(column, row)) return false;
 
+
     const target = board[column][row];
 
     if (target === emptyCell) {
@@ -30,6 +33,8 @@ export function showAvailableMoves(
     if (isEnemyPiece(currentPiece, target)) {
       moves.push({ column, row });
     }
+    
+    
 
     return false;
   };
@@ -130,6 +135,8 @@ export function showAvailableMoves(
         { column: -1, row: -1 },
       ];
 
+    
+
       kingMoves.forEach((move) => {
         addMoveIfValid(moveFrom.column + move.column, moveFrom.row + move.row);
       });
@@ -220,6 +227,7 @@ export function simulateMove( board: string[][], from: ValidPosition, to: ValidP
 export function getLegalMoves(
   pieceType: string,
   moveFrom: ValidPosition,
+  castlingRights: CastlingRights,
   board: string[][]
 ): ValidPosition[] {
   const currentPiece = board[moveFrom.column][moveFrom.row];
@@ -230,7 +238,12 @@ export function getLegalMoves(
 
   const color = currentPiece[0] as "W" | "B";
 
-  const availableMoves = showAvailableMoves(pieceType, moveFrom, board);
+  let availableMoves = ShowAvailableMoves(pieceType, moveFrom, board);
+
+  if (pieceType === "K") {
+    const castlingMoves = getCastlingMoves(board, color, castlingRights);
+    availableMoves = [...availableMoves,...castlingMoves];
+  }
 
   const legalMoves = availableMoves.filter((move) => {
     const simulatedBoard = simulateMove(board, moveFrom, move);
@@ -243,7 +256,7 @@ export function getLegalMoves(
   return legalMoves;
 }
 
-// Busca la posicion de los reyes y la guarda en los estados globales
+// Busca la posición de los reyes y la guarda en los estados globales
 export function findKingPosition(board: string[][], color: "W" | "B") {
 
   for (let row = 0; row < 8; row++) {
@@ -256,6 +269,7 @@ export function findKingPosition(board: string[][], color: "W" | "B") {
     }
   }
 }
+
 
 export function getAttackedSquares(
   pieceType: string,
@@ -272,7 +286,7 @@ export function getAttackedSquares(
 
   const color = currentPiece[0]; // Obtiene el color de la pieza
 
-  // Agrega una posicion si esta dentro del tablero
+  // Agrega una posición si esta dentro del tablero
   const addAttackIfInsideBoard = (column: number, row: number) => {
     if (!isInsideBoard(column, row)) return;
 

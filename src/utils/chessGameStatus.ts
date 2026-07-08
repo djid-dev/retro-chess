@@ -1,11 +1,12 @@
 import { emptyCell } from "./chessConstants";
 import { isKingInCheck, getLegalMoves } from "./chessMoves";
-import type { ColorTurn, GameStatus } from "./chessTypes";
+import type { CastlingRights, ColorTurn, GameStatus } from "./chessTypes";
 
 
 export function hasAnyLegalMove(
   board: string[][],
-  color: ColorTurn
+  color: ColorTurn,
+  castlingRights: CastlingRights
 ): boolean {
   for (let column = 0; column < 8; column++) {
     for (let row = 0; row < 8; row++) {
@@ -19,7 +20,9 @@ export function hasAnyLegalMove(
       const legalMoves = getLegalMoves(
         pieceType,
         { column, row },
-        board
+        castlingRights,
+        board,
+
       );
 
       if (legalMoves.length > 0) {
@@ -33,10 +36,11 @@ export function hasAnyLegalMove(
 
 export function getGameStatus(
   board: string[][],
+  castlingRights: CastlingRights,
   colorToMove: ColorTurn
 ): GameStatus {
   const kingInCheck = isKingInCheck(board, colorToMove);
-  const hasLegalMove = hasAnyLegalMove(board, colorToMove);
+  const hasLegalMove = hasAnyLegalMove(board, colorToMove, castlingRights);
 
   if (kingInCheck && !hasLegalMove) {
     return "checkmate";

@@ -1,5 +1,6 @@
 import { emptyCell } from "./chessConstants";
 
+
 const isInsideBoard = (column: number, row: number) => {
   return column >= 0 && column <= 7 && row >= 0 && row <= 7;
 };
@@ -28,6 +29,9 @@ const isMoveAvailable = (
     (move) => move.column === column && move.row === row,
   );
 };
+
+
+
 export {
   isInsideBoard,
   getPieceColor,

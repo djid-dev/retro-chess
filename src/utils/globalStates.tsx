@@ -1,7 +1,12 @@
 import { create } from "zustand";
 
 import { initialBoard } from "./chessConstants";
-import type { Position, GameStatus, ColorTurn } from "./chessTypes";
+import type {
+  Position,
+  GameStatus,
+  ColorTurn,
+  CastlingRights,
+} from "./chessTypes";
 
 type ChessStoreState = {
   board: string[][];
@@ -20,6 +25,13 @@ type ChessStoreState = {
   };
   setKingsPosition: (kingsPositions: { W: Position; B: Position }) => void;
 
+  // Estados para el enroque largo y corto
+  castlingRights: CastlingRights;
+  setCastlingRights: (
+    castlingRights: CastlingRights
+  ) => void;
+  // -----------------------------------------
+
   gameState: GameStatus;
   setGameState: (gameState: GameStatus) => void;
 
@@ -30,7 +42,6 @@ type ChessStoreState = {
 const useChessStore = create<ChessStoreState>((set) => ({
   board: initialBoard,
   setBoard: (board: string[][]) => set({ board }),
-
 
   colorTurn: "W",
   setTurn: (colorTurn: "W" | "B") => set({ colorTurn }),
@@ -45,6 +56,23 @@ const useChessStore = create<ChessStoreState>((set) => ({
   },
   setKingsPosition: (kingsPositions: { W: Position; B: Position }) =>
     set({ kingsPositions }),
+
+  // -----------------------------------------
+  // Estados para el enroque largo y corto
+
+  castlingRights: {
+    W: {
+      kingMoved: false,
+      leftRookMoved: false,
+      rightRookMoved: false,
+    },
+    B: {
+      kingMoved: false,
+      leftRookMoved: false,
+      rightRookMoved: false,
+    },
+  },
+  setCastlingRights: (castlingRights: CastlingRights) => set({ castlingRights }),
 
   gameState: "playing",
   setGameState: (gameState: GameStatus) => set({ gameState }),

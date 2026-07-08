@@ -19,3 +19,16 @@ export type GameStatus =
   | "check"
   | "checkmate"
   | "stalemate";
+
+export type CastlingRights = {
+  W: {
+    kingMoved: boolean;
+    leftRookMoved: boolean;
+    rightRookMoved: boolean;
+  };
+  B: {
+    kingMoved: boolean;
+    leftRookMoved: boolean;
+    rightRookMoved: boolean;
+  };
+};
