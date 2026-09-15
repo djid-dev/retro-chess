@@ -12,10 +12,10 @@
 }
 
 .black-piece {
-  filter: brightness(2) sepia(0.5) drop-shadow(1px 0 0 #d6c08a) drop-shadow(-1px 0 0 #d6c08a)
-    drop-shadow(0 1px 0 #d6c08a) drop-shadow(0 -1px 0 #d6c08a)
-    drop-shadow(1px 1px 0 #d6c08a) drop-shadow(-1px -1px 0 #d6c08a)
-    drop-shadow(1px -1px 0 #d6c08a) drop-shadow(-1px 1px 0 #d6c08a);
+  filter: brightness(2) sepia(0.5) drop-shadow(1px 0 0 #d6c08a) drop-shadow(-0.5px 0 0 #d6c08a)
+    drop-shadow(0 0.5px 0 #d6c08a) drop-shadow(0 -1px 0 #d6c08a)
+    drop-shadow(0.5px 1px 0 #d6c08a) drop-shadow(-1px -1px 0 #d6c08a)
+    drop-shadow(0.5px -1px 0 #d6c08a) drop-shadow(-1px 1px 0 #d6c08a);
 }
 /* 
 .highlighted{
@@ -68,10 +68,22 @@
   box-shadow: inset 0px 0px 0px 4px rgba(157, 77, 221, 0.15);
   cursor: pointer;
   box-sizing: border-box;
+  /* Evita que el navegador intente seleccionar texto o hacer scroll táctil
+     mientras se arrastra una pieza con el puntero */
+  user-select: none;
+  touch-action: none;
   transition:
     border 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out,
     filter 0.15s ease-in-out;
+}
+
+.square:not(.empty-cell) {
+  cursor: grab;
+}
+
+.square:not(.empty-cell):active {
+  cursor: grabbing;
 }
 
 .square:hover:not(.selected):not(.available-move){
@@ -91,4 +103,23 @@
 
 .black-square {
   background-color: #805c40;
+}
+
+/* Pieza que sigue al cursor mientras se arrastra (ver GameBoard.tsx). Se
+   posiciona con translate() en JS en cada movimiento del puntero; queda
+   siempre montada en el DOM y solo se muestra mientras está activa. */
+.drag-ghost {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--square-size);
+  height: var(--square-size);
+  pointer-events: none;
+  z-index: 1000;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.drag-ghost.active {
+  display: flex;
 }
