@@ -1,6 +1,11 @@
 
 
 .piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 
   filter: drop-shadow(1px 0 0 #d8c48c) drop-shadow(-1px 0 0 #d8c48c)
     drop-shadow(0 1px 0 #d8c48c) drop-shadow(0 -1px 0 #d8c48c);
@@ -33,19 +38,17 @@
 }
 
 .piece img {
-  width: 110%;
-  height: 110%;
+  width: 84%;
+  height: 84%;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  transform: scale(1.35);
-
 }
 
 .available-move::after {
   content: "";
-  width: 16px;
-  height: 16px;
+  width: clamp(8px, calc(var(--square-size) * 0.18), 16px);
+  height: clamp(8px, calc(var(--square-size) * 0.18), 16px);
   border-radius: 50%;
   background: rgba(234, 0, 255, 0.65);
   position: absolute;
@@ -56,16 +59,16 @@
 
 .square {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: var(--square-size);
+  height: var(--square-size);
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 4px solid transparent;
+  border: clamp(2px, calc(var(--square-size) * 0.035), 4px) solid transparent;
   box-shadow: inset 0px 0px 0px 4px rgba(157, 77, 221, 0.15);
   cursor: pointer;
   box-sizing: border-box;
-  transition: 
+  transition:
     border 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out,
     filter 0.15s ease-in-out;

@@ -3,30 +3,31 @@ import "../styles/CellStyles.css";
 
 interface CellProps {
   cell: string;
-  cellIndex: number;
+  columnIndex: number;
   rowIndex: number;
   isActive: boolean;
   isAvailableMove: boolean;
-  setActiveCell: (row: number, cell: number) => void;
+  setActiveCell: (column: number, row: number) => void;
 }
 
 function Cell({
   cell,
-  cellIndex,
+  columnIndex,
   rowIndex,
   isActive,
   isAvailableMove,
   setActiveCell,
 }: CellProps) {
-  function handleSquareClick() {
-    setActiveCell(rowIndex, cellIndex);
+  
+  const handleSquareClick = () => {
+    setActiveCell(columnIndex, rowIndex);
   }
 
   return (
     <li
       className={`
         square
-        ${(cellIndex + rowIndex) % 2 === 1 ? "white-square" : "black-square"}
+        ${(columnIndex + rowIndex) % 2 === 0 ? "white-square" : "black-square"}
         ${cell === "●" ? "empty-cell" : cell}
         ${isActive ? "selected" : ""}
         ${isAvailableMove ? "available-move" : ""}

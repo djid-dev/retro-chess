@@ -6,7 +6,7 @@ import { emptyCell, rowLabels } from "../utils/chessConstants";
 import type { Position, ValidPosition } from "../utils/chessTypes";
 
 import { getLegalMoves, simulateMove } from "../utils/chessMoves";
-import { isSameColorPiece, isMoveAvailable } from "../utils/chessHelpers";
+import { isMoveAvailable } from "../utils/chessHelpers";
 
 import useChessStore from "../utils/globalStates";
 import { getGameStatus } from "../utils/chessGameStatus";
@@ -47,7 +47,7 @@ function GameBoard() {
   };
   // -----------------------------------------
 
-  // Cambia el turno de los jugadores
+  // Pasa el turno al otro jugador; al volver a blancas se completa una ronda
   const changeTurn = () => {
     if (colorTurn === "W") {
       setTurn("B");
@@ -57,89 +57,37 @@ function GameBoard() {
     }
   };
 
-  
+  const hasPieceSelected = moveFrom.column !== null && moveFrom.row !== null;
 
-  const handleCellClick = (column: number, row: number) => {
-    const selectedCell = board[column][row];
+  // Selecciona una pieza propia y calcula sus movimientos legales para resaltarlos
+  const selectPiece = (position: ValidPosition, piece: string) => {
+    const pieceType = piece[1];
+    const legalMoves = getLegalMoves(pieceType, position, castlingRights, board);
 
-    const from: ValidPosition = {
-      column: moveFrom.column!,
-      row: moveFrom.row!
-    }
+    setMoveFrom(position);
+    setActiveCell(position);
+    setAvailableMoves(legalMoves);
+  };
 
-    const to: ValidPosition = {
-      column,
-      row,
-    }
-
-    // Si hago click en la misma celda seleccionada, limpio la selección
-    if (column === moveFrom.column && row === moveFrom.row) {
-      clearSelection();
-      return;
-    }
-    const pieceType = selectedCell[1];
-
-    const moves = getLegalMoves(pieceType, { column, row }, castlingRights, board);
-
-    // Si hago click en una pieza de mi color, la selecciono
-    if (selectedCell !== emptyCell && selectedCell.startsWith(colorTurn)) {
-      setMoveFrom({ column, row });
-      setActiveCell({ column, row });
-      setAvailableMoves(moves);
-
-      return;
-    }
-
-    // Si no tengo pieza seleccionada, no puedo mover
-    if (moveFrom.column === null || moveFrom.row === null) {
-      return;
-    }
-
-    // Si hago click en una pieza de mi mismo color, no puedo capturarla
+  // Mueve la pieza seleccionada (`from`) a la casilla elegida (`to`) y actualiza
+  // el estado de la partida: tablero, derechos de enroque, turno y resultado
+  const movePiece = (from: ValidPosition, to: ValidPosition) => {
     const movingPiece = board[from.column][from.row];
     const capturedPiece = board[to.column][to.row];
-
-    if (isSameColorPiece(movingPiece, selectedCell)) {
-      return;
-    }
-
-    // Si el movimiento no está permitido, no hago nada
-    if (!isMoveAvailable(availableMoves, column, row)) {
-      return;
-    }
-
-    
-
     const enemyColor = colorTurn === "W" ? "B" : "W";
 
-    // Mover o capturar pieza
-    
-    let newBoard = board.map((boardColumn) => [...boardColumn]);
-
-    if(isCastlingMove(movingPiece, from, to)){
-      newBoard = simulateMoveWithCastling(board, from, to)
-    } else {
-      newBoard[column][row] = board[moveFrom.column!][moveFrom.row!];
-      newBoard[moveFrom.column!][moveFrom.row!] = emptyCell;
-    }
+    const newBoard = isCastlingMove(movingPiece, from, to)
+      ? simulateMoveWithCastling(board, from, to)
+      : simulateMove(board, from, to);
 
     setBoard(newBoard);
 
-    // Actualiza derechos de Enroque
     let newCastlingRights = updateCastlingRightsAfterMove(castlingRights, movingPiece, from);
+    newCastlingRights = updateCastlingRightsAfterCapture(newCastlingRights, capturedPiece, to);
+    setCastlingRights(newCastlingRights);
 
-    newCastlingRights = updateCastlingRightsAfterCapture(
-      newCastlingRights,
-      capturedPiece,
-      to
-    )
+    const status = getGameStatus(newBoard, newCastlingRights, enemyColor);
 
-    setCastlingRights(newCastlingRights)
-
-    //Actualiza el estado informativo del juego
-    const status = getGameStatus(newBoard,newCastlingRights, enemyColor);
-
-    // Detecta si alguien hizo un Jaque Mate o tablas por Rey ahogado.
     if (status === "checkmate") {
       setWinner(colorTurn);
     } else if (status === "stalemate") {
@@ -150,6 +98,35 @@ function GameBoard() {
 
     changeTurn();
     clearSelection();
+  };
+
+  const handleCellClick = (column: number, row: number) => {
+    const clickedPosition: ValidPosition = { column, row };
+    const clickedPiece = board[column][row];
+
+    // Click sobre la pieza ya seleccionada: la deselecciona
+    if (column === moveFrom.column && row === moveFrom.row) {
+      clearSelection();
+      return;
+    }
+
+    // Click sobre una pieza propia: la selecciona (o cambia la selección)
+    if (clickedPiece !== emptyCell && clickedPiece.startsWith(colorTurn)) {
+      selectPiece(clickedPosition, clickedPiece);
+      return;
+    }
+
+    // Sin pieza seleccionada todavía, un click en vacío/rival no hace nada
+    if (!hasPieceSelected) {
+      return;
+    }
+
+    // Click sobre un destino no permitido para la pieza seleccionada
+    if (!isMoveAvailable(availableMoves, column, row)) {
+      return;
+    }
+
+    movePiece({ column: moveFrom.column!, row: moveFrom.row! }, clickedPosition);
   };
 
   return (
@@ -178,8 +155,8 @@ function GameBoard() {
                   <Cell
                     key={`cell-${columnIndex}-${rowIndex}`}
                     cell={cell}
-                    cellIndex={rowIndex}
-                    rowIndex={columnIndex}
+                    columnIndex={columnIndex}
+                    rowIndex={rowIndex}
                     isActive={isActive}
                     isAvailableMove={isAvailableMove}
                     setActiveCell={handleCellClick}

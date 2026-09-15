@@ -2,7 +2,7 @@ import { emptyCell } from "./chessConstants";
 import { isKingInCheck, getLegalMoves } from "./chessMoves";
 import type { CastlingRights, ColorTurn, GameStatus } from "./chessTypes";
 
-
+/** true si `color` tiene al menos un movimiento legal disponible en el tablero. */
 export function hasAnyLegalMove(
   board: string[][],
   color: ColorTurn,
@@ -34,6 +34,7 @@ export function hasAnyLegalMove(
   return false;
 }
 
+/** Determina el estado de la partida para `colorToMove`: jaque, jaque mate, tablas o normal. */
 export function getGameStatus(
   board: string[][],
   castlingRights: CastlingRights,

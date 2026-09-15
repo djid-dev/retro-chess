@@ -1,12 +1,45 @@
 import { isInsideBoard, isEnemyPiece } from "./chessHelpers";
 import type { CastlingRights, ValidPosition } from "./chessTypes";
 
-import { emptyCell } from "./chessConstants";
+import {
+  emptyCell,
+  ROOK_DIRECTIONS,
+  BISHOP_DIRECTIONS,
+  QUEEN_DIRECTIONS,
+  KNIGHT_OFFSETS,
+  KING_OFFSETS,
+} from "./chessConstants";
 
 import { getCastlingMoves } from "./chessCastling";
 
+/**
+ * Recorre un conjunto de direcciones hasta salirse del tablero o chocar con
+ * una pieza, invocando `onSquare` por cada casilla encontrada en el camino.
+ * Es la base compartida de las piezas deslizantes (torre, alfil, dama) tanto
+ * para calcular movimientos como para calcular casillas atacadas.
+ */
+function walkDirections(
+  from: ValidPosition,
+  directions: ValidPosition[],
+  board: string[][],
+  onSquare: (square: ValidPosition, target: string) => "stop" | "continue",
+) {
+  directions.forEach((direction) => {
+    let column = from.column + direction.column;
+    let row = from.row + direction.row;
 
-// Reglas de movimiento
+    while (isInsideBoard(column, row)) {
+      const target = board[column][row];
+
+      if (onSquare({ column, row }, target) === "stop") break;
+
+      column += direction.column;
+      row += direction.row;
+    }
+  });
+}
+
+/** Calcula los movimientos legales de una pieza sin tener en cuenta si dejan al propio rey en jaque. */
 export function ShowAvailableMoves(
   piece: string,
   moveFrom: ValidPosition,
@@ -17,132 +50,58 @@ export function ShowAvailableMoves(
   const currentPiece = board[moveFrom.column][moveFrom.row];
   const color = currentPiece[0];
 
-  const addMoveIfValid = (column: number, row: number) => {
-    
+  const addSlidingMoves = (directions: ValidPosition[]) => {
+    walkDirections(moveFrom, directions, board, (square, target) => {
+      if (target === emptyCell) {
+        moves.push(square);
+        return "continue";
+      }
 
-    if (!isInsideBoard(column, row)) return false;
+      if (isEnemyPiece(currentPiece, target)) {
+        moves.push(square);
+      }
 
-
-    const target = board[column][row];
-
-    if (target === emptyCell) {
-      moves.push({ column, row });
-      return true;
-    }
-
-    if (isEnemyPiece(currentPiece, target)) {
-      moves.push({ column, row });
-    }
-    
-    
-
-    return false;
+      return "stop";
+    });
   };
 
-  const addSlidingMoves = (directions: ValidPosition[]) => {
-    directions.forEach((direction) => {
-      let nextColumn = moveFrom.column + direction.column;
-      let nextRow = moveFrom.row + direction.row;
+  const addJumpMoves = (offsets: ValidPosition[]) => {
+    offsets.forEach(({ column, row }) => {
+      const target: ValidPosition = {
+        column: moveFrom.column + column,
+        row: moveFrom.row + row,
+      };
 
-      while (isInsideBoard(nextColumn, nextRow)) {
-        const target = board[nextColumn][nextRow];
+      if (!isInsideBoard(target.column, target.row)) return;
 
-        if (target === emptyCell) {
-          moves.push({
-            column: nextColumn,
-            row: nextRow,
-          });
-        } else {
-          if (isEnemyPiece(currentPiece, target)) {
-            moves.push({
-              column: nextColumn,
-              row: nextRow,
-            });
-          }
+      const targetPiece = board[target.column][target.row];
 
-          break;
-        }
-
-        nextColumn += direction.column;
-        nextRow += direction.row;
+      if (targetPiece === emptyCell || isEnemyPiece(currentPiece, targetPiece)) {
+        moves.push(target);
       }
     });
   };
 
   switch (piece) {
-    case "R": {
-      addSlidingMoves([
-        { column: 1, row: 0 },
-        { column: -1, row: 0 },
-        { column: 0, row: 1 },
-        { column: 0, row: -1 },
-      ]);
+    case "R":
+      addSlidingMoves(ROOK_DIRECTIONS);
       break;
-    }
 
-    case "N": {
-      const knightMoves = [
-        { column: 2, row: 1 },
-        { column: 2, row: -1 },
-        { column: -2, row: 1 },
-        { column: -2, row: -1 },
-        { column: 1, row: 2 },
-        { column: 1, row: -2 },
-        { column: -1, row: 2 },
-        { column: -1, row: -2 },
-      ];
-
-      knightMoves.forEach((move) => {
-        addMoveIfValid(moveFrom.column + move.column, moveFrom.row + move.row);
-      });
-
+    case "B":
+      addSlidingMoves(BISHOP_DIRECTIONS);
       break;
-    }
 
-    case "B": {
-      addSlidingMoves([
-        { column: 1, row: 1 },
-        { column: 1, row: -1 },
-        { column: -1, row: 1 },
-        { column: -1, row: -1 },
-      ]);
+    case "Q":
+      addSlidingMoves(QUEEN_DIRECTIONS);
       break;
-    }
 
-    case "Q": {
-      addSlidingMoves([
-        { column: 1, row: 0 },
-        { column: -1, row: 0 },
-        { column: 0, row: 1 },
-        { column: 0, row: -1 },
-        { column: 1, row: 1 },
-        { column: 1, row: -1 },
-        { column: -1, row: 1 },
-        { column: -1, row: -1 },
-      ]);
+    case "N":
+      addJumpMoves(KNIGHT_OFFSETS);
       break;
-    }
 
-    case "K": {
-      const kingMoves = [
-        { column: 1, row: 0 },
-        { column: -1, row: 0 },
-        { column: 0, row: 1 },
-        { column: 0, row: -1 },
-        { column: 1, row: 1 },
-        { column: 1, row: -1 },
-        { column: -1, row: 1 },
-        { column: -1, row: -1 },
-      ];
-
-    
-
-      kingMoves.forEach((move) => {
-        addMoveIfValid(moveFrom.column + move.column, moveFrom.row + move.row);
-      });
-
+    case "K":
+      addJumpMoves(KING_OFFSETS);
       break;
-    }
 
     case "P": {
       const direction = color === "W" ? -1 : 1;
@@ -150,60 +109,38 @@ export function ShowAvailableMoves(
 
       const oneStepRow = moveFrom.row + direction;
 
-      // Movimiento normal hacia adelante
+      // Avance de una casilla (solo si está libre)
       if (
         isInsideBoard(moveFrom.column, oneStepRow) &&
         board[moveFrom.column][oneStepRow] === emptyCell
       ) {
-        moves.push({
-          column: moveFrom.column,
-          row: oneStepRow,
-        });
+        moves.push({ column: moveFrom.column, row: oneStepRow });
 
+        // Avance doble, solo permitido desde la fila inicial del peón
         const twoStepRow = moveFrom.row + direction * 2;
 
-        // Movimiento doble solo desde la fila inicial
         if (
           moveFrom.row === startRow &&
           isInsideBoard(moveFrom.column, twoStepRow) &&
           board[moveFrom.column][twoStepRow] === emptyCell
         ) {
-          moves.push({
-            column: moveFrom.column,
-            row: twoStepRow,
-          });
+          moves.push({ column: moveFrom.column, row: twoStepRow });
         }
       }
 
-      // Captura diagonal izquierda
-      const leftCaptureColumn = moveFrom.column - 1;
-      const leftCaptureRow = moveFrom.row + direction;
+      // Capturas diagonales (izquierda y derecha)
+      [-1, 1].forEach((columnOffset) => {
+        const column = moveFrom.column + columnOffset;
+        const row = oneStepRow;
 
-      if (isInsideBoard(leftCaptureColumn, leftCaptureRow)) {
-        const target = board[leftCaptureColumn][leftCaptureRow];
+        if (!isInsideBoard(column, row)) return;
+
+        const target = board[column][row];
 
         if (isEnemyPiece(currentPiece, target)) {
-          moves.push({
-            column: leftCaptureColumn,
-            row: leftCaptureRow,
-          });
+          moves.push({ column, row });
         }
-      }
-
-      // Captura diagonal derecha
-      const rightCaptureColumn = moveFrom.column + 1;
-      const rightCaptureRow = moveFrom.row + direction;
-
-      if (isInsideBoard(rightCaptureColumn, rightCaptureRow)) {
-        const target = board[rightCaptureColumn][rightCaptureRow];
-
-        if (isEnemyPiece(currentPiece, target)) {
-          moves.push({
-            column: rightCaptureColumn,
-            row: rightCaptureRow,
-          });
-        }
-      }
+      });
 
       break;
     }
@@ -215,7 +152,8 @@ export function ShowAvailableMoves(
   return moves;
 }
 
-export function simulateMove( board: string[][], from: ValidPosition, to: ValidPosition){
+/** Devuelve una copia del tablero con la pieza movida de `from` a `to` (sin reglas especiales como el enroque). */
+export function simulateMove(board: string[][], from: ValidPosition, to: ValidPosition) {
   const newBoard = board.map((row) => [...row]);
 
   newBoard[to.column][to.row] = newBoard[from.column][from.row];
@@ -224,6 +162,11 @@ export function simulateMove( board: string[][], from: ValidPosition, to: ValidP
   return newBoard;
 }
 
+/**
+ * Movimientos realmente legales de una pieza: sus movimientos "básicos"
+ * (más el enroque si es el rey) filtrados para descartar aquellos que
+ * dejarían al propio rey en jaque.
+ */
 export function getLegalMoves(
   pieceType: string,
   moveFrom: ValidPosition,
@@ -242,35 +185,35 @@ export function getLegalMoves(
 
   if (pieceType === "K") {
     const castlingMoves = getCastlingMoves(board, color, castlingRights);
-    availableMoves = [...availableMoves,...castlingMoves];
+    availableMoves = [...availableMoves, ...castlingMoves];
   }
 
-  const legalMoves = availableMoves.filter((move) => {
+  return availableMoves.filter((move) => {
     const simulatedBoard = simulateMove(board, moveFrom, move);
-
-    const kingStillInCheck = isKingInCheck(simulatedBoard, color);
-
-    return !kingStillInCheck;
+    return !isKingInCheck(simulatedBoard, color);
   });
-
-  return legalMoves;
 }
 
-// Busca la posición de los reyes y la guarda en los estados globales
+/** Busca la posición del rey de `color` en el tablero. */
 export function findKingPosition(board: string[][], color: "W" | "B") {
+  for (let column = 0; column < 8; column++) {
+    for (let row = 0; row < 8; row++) {
+      const piece = board[column][row];
 
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      const piece = board[row][col];
-      if (piece === emptyCell) continue;
-      if (piece[1] === "K" && piece[0] === color) {
-        return { column: row, row: col };
+      if (piece === `${color}K`) {
+        return { column, row };
       }
     }
   }
 }
 
-
+/**
+ * Casillas que una pieza amenaza, ignorando si el movimiento es legal o si
+ * la casilla de destino tiene una pieza propia. Se usa para detectar jaque,
+ * por lo que a diferencia de ShowAvailableMoves incluye la primera pieza
+ * bloqueante de cada dirección (amiga o enemiga) y, para el peón, sus dos
+ * diagonales de ataque estén o no ocupadas.
+ */
 export function getAttackedSquares(
   pieceType: string,
   moveFrom: ValidPosition,
@@ -284,123 +227,56 @@ export function getAttackedSquares(
     return attackedSquares;
   }
 
-  const color = currentPiece[0]; // Obtiene el color de la pieza
+  const color = currentPiece[0];
 
-  // Agrega una posición si esta dentro del tablero
-  const addAttackIfInsideBoard = (column: number, row: number) => {
-    if (!isInsideBoard(column, row)) return;
-
-    attackedSquares.push({ column, row });
+  const addSlidingAttacks = (directions: ValidPosition[]) => {
+    walkDirections(moveFrom, directions, board, (square, target) => {
+      attackedSquares.push(square);
+      return target === emptyCell ? "continue" : "stop";
+    });
   };
 
-  //
-  const addSlidingAttacks = (directions: ValidPosition[]) => {
-    directions.forEach((direction) => {
-      let nextColumn = moveFrom.column + direction.column;
-      let nextRow = moveFrom.row + direction.row;
+  const addJumpAttacks = (offsets: ValidPosition[]) => {
+    offsets.forEach(({ column, row }) => {
+      const target: ValidPosition = {
+        column: moveFrom.column + column,
+        row: moveFrom.row + row,
+      };
 
-      while (isInsideBoard(nextColumn, nextRow)) {
-        attackedSquares.push({
-          column: nextColumn,
-          row: nextRow,
-        });
-
-        const target = board[nextColumn][nextRow];
-
-        if (target !== emptyCell) {
-          break;
-        }
-
-        nextColumn += direction.column;
-        nextRow += direction.row;
+      if (isInsideBoard(target.column, target.row)) {
+        attackedSquares.push(target);
       }
     });
   };
 
   switch (pieceType) {
-    case "R": {
-      addSlidingAttacks([
-        { column: 1, row: 0 },
-        { column: -1, row: 0 },
-        { column: 0, row: 1 },
-        { column: 0, row: -1 },
-      ]);
+    case "R":
+      addSlidingAttacks(ROOK_DIRECTIONS);
       break;
-    }
 
-    case "B": {
-      addSlidingAttacks([
-        { column: 1, row: 1 },
-        { column: 1, row: -1 },
-        { column: -1, row: 1 },
-        { column: -1, row: -1 },
-      ]);
+    case "B":
+      addSlidingAttacks(BISHOP_DIRECTIONS);
       break;
-    }
 
-    case "Q": {
-      addSlidingAttacks([
-        { column: 1, row: 0 },
-        { column: -1, row: 0 },
-        { column: 0, row: 1 },
-        { column: 0, row: -1 },
-        { column: 1, row: 1 },
-        { column: 1, row: -1 },
-        { column: -1, row: 1 },
-        { column: -1, row: -1 },
-      ]);
+    case "Q":
+      addSlidingAttacks(QUEEN_DIRECTIONS);
       break;
-    }
 
-    case "N": {
-      const knightAttacks = [
-        { column: 2, row: 1 },
-        { column: 2, row: -1 },
-        { column: -2, row: 1 },
-        { column: -2, row: -1 },
-        { column: 1, row: 2 },
-        { column: 1, row: -2 },
-        { column: -1, row: 2 },
-        { column: -1, row: -2 },
-      ];
-
-      knightAttacks.forEach((move) => {
-        addAttackIfInsideBoard(
-          moveFrom.column + move.column,
-          moveFrom.row + move.row,
-        );
-      });
-
+    case "N":
+      addJumpAttacks(KNIGHT_OFFSETS);
       break;
-    }
 
-    case "K": {
-      const kingAttacks = [
-        { column: 1, row: 0 },
-        { column: -1, row: 0 },
-        { column: 0, row: 1 },
-        { column: 0, row: -1 },
-        { column: 1, row: 1 },
-        { column: 1, row: -1 },
-        { column: -1, row: 1 },
-        { column: -1, row: -1 },
-      ];
-
-      kingAttacks.forEach((move) => {
-        addAttackIfInsideBoard(
-          moveFrom.column + move.column,
-          moveFrom.row + move.row,
-        );
-      });
-
+    case "K":
+      addJumpAttacks(KING_OFFSETS);
       break;
-    }
 
     case "P": {
       const direction = color === "W" ? -1 : 1;
 
-      addAttackIfInsideBoard(moveFrom.column - 1, moveFrom.row + direction);
-      addAttackIfInsideBoard(moveFrom.column + 1, moveFrom.row + direction);
+      addJumpAttacks([
+        { column: -1, row: direction },
+        { column: 1, row: direction },
+      ]);
 
       break;
     }
@@ -412,10 +288,8 @@ export function getAttackedSquares(
   return attackedSquares;
 }
 
-export function isKingInCheck(
-  board: string[][],
-  kingColor: "W" | "B",
-): boolean {
+/** Indica si el rey de `kingColor` está siendo atacado por alguna pieza enemiga. */
+export function isKingInCheck(board: string[][], kingColor: "W" | "B"): boolean {
   const kingPosition = findKingPosition(board, kingColor);
 
   if (!kingPosition) {
@@ -428,21 +302,12 @@ export function isKingInCheck(
     for (let row = 0; row < 8; row++) {
       const piece = board[column][row];
 
-      if (piece === emptyCell) continue;
-      if (!piece.startsWith(enemyColor)) continue;
+      if (piece === emptyCell || !piece.startsWith(enemyColor)) continue;
 
-      const pieceType = piece[1];
-
-      const attackedSquares = getAttackedSquares(
-        pieceType,
-        { column, row },
-        board,
-      );
+      const attackedSquares = getAttackedSquares(piece[1], { column, row }, board);
 
       const kingIsAttacked = attackedSquares.some(
-        (square) =>
-          square.column === kingPosition.column &&
-          square.row === kingPosition.row,
+        (square) => square.column === kingPosition.column && square.row === kingPosition.row,
       );
 
       if (kingIsAttacked) {
